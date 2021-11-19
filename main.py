@@ -5,6 +5,7 @@ def get_args_parser():
     #particle filter
     parser.add_argument('--n_particles', default=2000, type=int)
     parser.add_argument('--gamma', default=0.5, type=float,help="the parameter in equation 12")
+    parser.add_argument('--n_resampling', default=100, type=int, help="how many steps when particle filter resampling")
 
 
     #implement info
@@ -21,8 +22,10 @@ def main(args):
 
     while True:
         filter.update_event(event)
-        filter.update_poses(delta_r=delta_r)
+        filter.update_poses(delta_r=delta_r,delta_theta=delta_theta)
         filter.update_scores()  # here the time step + 1
+        if filter.get_time_step() % args.n_resampling == 0:
+            filter.resampling()
         filter.increment_time()
 
 

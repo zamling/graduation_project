@@ -47,13 +47,14 @@ class Particle:
         return self._history[k]
 
 class Pose:
-    def __init__(self,x,y):
+    def __init__(self,x,y,r):
         self.x = x
         self.y = y
+        self.r = r
 
     @property
     def state(self):
-        return self.x, self.y
+        return self.x, self.y, self.r
 
 if __name__ == "__main__":
     p = Pose(1,2)
