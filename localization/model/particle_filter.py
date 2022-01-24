@@ -3,11 +3,13 @@ import numpy as np
 import bisect
 import random
 import math
+from util import tools
+
 
 def distance(p,q):
-    p_x,p_y = p
-    q_x, q_y = q
-    return np.sqrt(np.square((p_x-q_x))+np.square((p_y-q_y)))
+    p_x,p_y,p_z = p
+    q_x, q_y, q_z = q
+    return np.sqrt(np.square((p_x-q_x))+np.square((p_y-q_y)),np.square((p_z-q_z)))
 
 def get_alpha():
 
@@ -16,10 +18,6 @@ def get_alpha():
 
 class WeightedDistribution(object):
     def __init__(self,current_scores):
-        '''
-
-        :param state: dict: k time particles dict
-        '''
         accum = 0.0
         self.distribution = []
         self.state = []
@@ -29,44 +27,86 @@ class WeightedDistribution(object):
                 accum += current_scores[i]
                 self.distribution.append(accum)
 
-
     def pick(self):
         try:
             return self.state[bisect.bisect_left(self.distribution, random.uniform(0, 1))]
         except IndexError:
             # Happens when all particles are improbable w=0
+            print('Happens when all particles are improbable w=0')
             raise
 
 class ParticleFilter:
     def __init__(self,arg,feature_points):
+        '''
+        n_particles: the number of particles in this Filter
+        map_info: the information of map
+
+        '''
         self.n_particles = arg.n_particles
         self.map_info = arg.map_info
-        self.particles = E.Particle()
+        self.particle_list = []
         self.time_step = 0
-        self.events = []
         self.gamma = arg.gamma
+        self.transform = tools.Transform(arg)
         self.D = arg.D
         self.feature_points = feature_points
-        self.f = arg.focal_d
+        self.f = arg.focal
+        self.G0 = arg.G0
         #format of feature points [(1,2),(2,3),...]
 
         self.init_particle()
 
     def init_particle(self):
         assert self.time_step == 0, "wrong initial"
-        h_max,w_max = self.map_info
+        init_score = 1  # /self.n_particles
+        h_max = w_max = 25
         poses = []
         for i in range(self.n_particles):
-            x = np.random.rand() * h_max
-            y = np.random.rand() * w_max
-            r = np.random.rand() * 2*math.pi
-            new_particle = E.Pose(x,y,r)
-            poses.append(new_particle)
-        self.particles.update_Pose(self.time_step,poses)
-        scores = self.calculate_score()
-        self.particles.update_Score(0, scores)
+            x = random.uniform(-1,1) * h_max
+            y = random.uniform(-1,1) * w_max # \pm 25 cm
+            r = random.uniform(0,1) * 2 * np.pi
 
-        self.increment_time() # start the first estimation
+            new_particle = E.Pose(x,y,r)
+            temp_particle = E.Particle()
+            temp_particle.update_Pose(new_particle)
+            temp_particle.update_Score(init_score)
+            self.particle_list.append(temp_particle)
+
+    def get_particles(self):
+        return self.particle_list
+
+
+    def update(self,event,pre_particles):
+        event_param = event.get_param()
+        e_x = event_param['x']
+        e_y = event_param['y']
+        e_x, e_y, e_z = self.transform.pixel2image(e_x,e_y)
+        for i,particle in enumerate(pre_particles):
+            pose = particle.get_pose()
+            p_x, p_y, p_r = pose.state
+            e_x, e_y, e_z = self.transform.image2ref(e_x, e_y, e_z, pose)
+            Wpx = self.cal_Wpx()
+            delta_r = Wpx / self.G0
+            h,w = self.map_info
+            S = min(h,w)
+            delta_theta = 4 / (S * self.G0)
+            M_x = np.random.normal(loc=0, scale=delta_r)
+            M_y = np.random.normal(loc=0, scale=delta_r)
+            M_r = np.random.normal(loc=0, scale=delta_theta)
+            x = p_x + M_x
+            y = p_y + M_y
+            r = p_r + M_r
+            new_pose = E.Pose(x,y,r)
+            self.particle_list[i].update_Pose(new_pose)
+            r = distance((e_x,e_y,e_z),(x,y,0))
+            min_h = self.find_min(r, (e_x, e_y, e_z))
+            update_number = np.exp(-1 / 2 * np.square(min_h / (self.gamma * Wpx)))
+            alpha = self.cal_alpha()
+            pre_score = particle.get_score()
+            score = pre_score + alpha * update_number
+            self.particle_list[i].update_Score(score)
+
+
 
     def find_min(self,r,e):
         #F_H(r)
@@ -82,55 +122,16 @@ class ParticleFilter:
                     cur_min = h
         return cur_min
 
-    def update_poses(self,delta_r,delta_theta):
-        assert self.time_step >= 1,"can not update poses in time=0"
-        pre_pose = self.particles.get_k_Particle(self.time_step-1)["poses"]
-        Poses = []
-        for i in range(self.n_particles):
-            M_x = np.random.normal(loc=0, scale=delta_r)
-            M_y = np.random.normal(loc=0, scale=delta_r)
-            M_r = np.random.normal(loc=0, scale=delta_theta)
-            pre_x,pre_y,pre_r = pre_pose[i].state
-            x = pre_x + M_x
-            y = pre_y + M_y
-            r = pre_r + M_r
-            new_Pose = E.Pose(x, y, r)
-            Poses.append(new_Pose)
-        self.particles.update_Pose(self.time_step, Poses)
-        return Poses
-
-    def calculate_score(self,pre_scores=None):
-        if pre_scores is None:
-            pre_scores = np.zeros((self.n_particles))
-        new_scores = np.zeros((self.n_particles))
-        # min d_{ray}(r,h)
-        '''
-        we have known all of feature points in this map, and here, we compare the event
-        '''
-        r = np.zeros((self.n_particles,))
-        params = self.events[-1].get_param
-        e_x = params['x']
-        e_y = params['y']
-        current_poses = self.particles.get_k_Particle(self.time_step)["poses"]
-        assert len(current_poses) == self.n_particles, "some wrong in _history"
-        for i, p in enumerate(current_poses):
-            p_x, p_y,_ = p.state
-            p_e_d = distance((e_x, e_y), (p_x, p_y))
-            Wpx = p_e_d / self.f
-            r = np.sqrt((np.square(self.D) + np.square(p_e_d)))
-            min_h = self.find_min(r, (e_x, e_y))
-            update_number = np.exp(-1 / 2 * np.square(min_h / (self.gamma * Wpx)))
-            alpha = 0.5  # need to change!!!!!!!
-            new_scores[i] = pre_scores[i] + alpha * update_number
-        return new_scores
-
-    def update_scores(self):
-        assert self.time_step >= 1, "can not update poses in time=0"
-        pre_scores = self.particles.get_k_Particle(self.time_step-1)["scores"]
-        new_scores = self.calculate_score(pre_scores=pre_scores)
-        self.particles.update_Score(self.time_step, new_scores)
 
 
+    def cal_Wpx(self):
+        Wpx = 0.002 * self.D / self.f
+        return Wpx
+    def cal_alpha(self):
+        return -math.log(1-0.95)/(self.G0+1)
+
+    def update_G0(self,G0):
+        self.G0 = G0
 
 
     def increment_time(self):
@@ -140,35 +141,47 @@ class ParticleFilter:
     def get_time_step(self):
         return self.time_step
 
-    def resampling(self):
-        new_particles = {"pose":[],"scores":np.zeros(self.n_particles,)}
-        current_poses = self.particles.get_k_Particle(self.time_step)["pose"]
-        current_scores = self.particles.get_k_Particle(self.time_step)["scores"]
+    def normalize_score(self,scores):
+        total = sum(scores)
+        if total:
+            for i in range(len(scores)):
+                scores[i] = scores[i] / total
+        return scores
+
+    def resampling(self,noisy=True):
+        new_particle_list = []
+        current_poses = []
+        current_scores = []
         new_poses = []
         new_scores = np.zeros((self.n_particles,))
+        for i,particle in enumerate(self.particle_list):
+            current_poses.append(particle.get_pose())
+            current_scores.append(particle.get_score())
+
 
         # Normalise weights
-        sum = current_scores.sum()
-        if sum:
-            for i in range(len(current_scores)):
-                current_scores[i] = current_scores[i]/sum
+        current_scores = self.normalize_score(current_scores)
 
-        # create a weighted distribution, for fast picking
+
+        # get an probibility density distribution
+        # accumulative propability
         dist = WeightedDistribution(current_scores)
 
         for i in range(len(self.n_particles)):
             index = dist.pick()
+            if noisy:
+                new_pose=current_poses[index].add_noise()
+            else:
+                new_pose=current_poses[index]
+            new_score = current_scores[index]
+            new_particle = E.Particle()
+            new_particle.update_Pose(new_pose)
+            new_particle.update_Score(new_score)
+            new_particle_list.append(new_particle)
 
-            new_poses.append(current_poses[index])
-            new_scores[i] = current_scores[index]
-
-        self.particles.update_Pose(self.time_step,new_poses)
-        self.particles.update_Score(self.time_step,new_scores)
+        self.particle_list = new_particle_list
 
 
-    def update_event(self,event):
-        new_event = event
-        self.events.append(new_event)
 
 
 
