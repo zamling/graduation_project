@@ -21,14 +21,7 @@ class Event:
         return "the event location is: ( {} , {}) \n the polarity is: {}\n the time step is {}".format(self.x,self.y,self.pol,self.time)
 
 
-def add_noise(level, *coords):
-    return [x + random.uniform(-level, level) for x in coords]
 
-def add_little_noise(*coords):
-    return add_noise(0.02, *coords)
-
-def add_some_noise(*coords):
-    return add_noise(0.1, *coords)
 
 class Particle:
     '''
@@ -73,7 +66,7 @@ class Pose:
     def add_noise(self,level=1):
         x = self.x+ random.uniform(-level, level)
         y = self.x+ random.uniform(-level, level) # guassion  1 cm 1-2 degree (0, 2pi)
-        r = self.x+ random.uniform(-level, level)*2
+        r = self.x+ random.uniform(-level, level)*2*2*np.pi/360
         r = tools.valid_angle(r)
 
         return Pose(x,y,r)

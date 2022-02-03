@@ -9,11 +9,8 @@ from util import tools
 def distance(p,q):
     p_x,p_y,p_z = p
     q_x, q_y, q_z = q
-    return np.sqrt(np.square((p_x-q_x))+np.square((p_y-q_y)),np.square((p_z-q_z)))
+    return np.sqrt(np.square((p_x-q_x))+np.square((p_y-q_y))+np.square((p_z-q_z)))
 
-def get_alpha():
-
-    pass
 
 
 class WeightedDistribution(object):
@@ -52,6 +49,7 @@ class ParticleFilter:
         self.feature_points = feature_points
         self.f = arg.focal
         self.G0 = arg.G0
+        self.Wpx = self.cal_Wpx()
         #format of feature points [(1,2),(2,3),...]
 
         self.init_particle()
@@ -85,8 +83,7 @@ class ParticleFilter:
             pose = particle.get_pose()
             p_x, p_y, p_r = pose.state
             e_x, e_y, e_z = self.transform.image2ref(e_x, e_y, e_z, pose)
-            Wpx = self.cal_Wpx()
-            delta_r = Wpx / self.G0
+            delta_r = self.Wpx / self.G0
             h,w = self.map_info
             S = min(h,w)
             delta_theta = 4 / (S * self.G0)
@@ -100,7 +97,7 @@ class ParticleFilter:
             self.particle_list[i].update_Pose(new_pose)
             r = distance((e_x,e_y,e_z),(x,y,0))
             min_h = self.find_min(r, (e_x, e_y, e_z))
-            update_number = np.exp(-1 / 2 * np.square(min_h / (self.gamma * Wpx)))
+            update_number = np.exp(-1 / 2 * np.square(min_h / (self.gamma * self.Wpx)))
             alpha = self.cal_alpha()
             pre_score = particle.get_score()
             score = pre_score + alpha * update_number
@@ -126,6 +123,7 @@ class ParticleFilter:
 
     def cal_Wpx(self):
         Wpx = 0.002 * self.D / self.f
+        #0.11
         return Wpx
     def cal_alpha(self):
         return -math.log(1-0.95)/(self.G0+1)
@@ -167,7 +165,7 @@ class ParticleFilter:
         # accumulative propability
         dist = WeightedDistribution(current_scores)
 
-        for i in range(len(self.n_particles)):
+        for i in range(self.n_particles):
             index = dist.pick()
             if noisy:
                 new_pose=current_poses[index].add_noise()
@@ -179,7 +177,7 @@ class ParticleFilter:
             new_particle.update_Score(new_score)
             new_particle_list.append(new_particle)
 
-        self.particle_list = new_particle_list
+        self.particle_list = list(new_particle_list)
 
 
 

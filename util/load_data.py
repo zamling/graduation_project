@@ -1,13 +1,16 @@
 import numpy as np
 import pandas as pd
 import os
-import event as E
+from util import event as E
 data_map = {'single':'single_dot.txt',
             'tone':'tone_dots.txt',
             'triangle':'triangle_dots.txt',
             'shape':'shapes_dots.txt',
             'random':'random_dots.txt'}
 root = "C:\git\graduation_project\Data"
+feat_map = {
+    'triangle': [[-5.8,0,46],[9.4,0,46],[0,6.0,46]]
+}
 
 def dataLoader(name):
     if name in data_map:
@@ -26,7 +29,34 @@ def dataLoader(name):
         results.append(event)
     return results
 
-def getFeaturePoints(name):
+def getFeaturePoints(name,expand=True):
+    featpoints = []
+    if name == 'triangle':
+        points = feat_map['triangle']
+        for point in points:
+            featpoints.append(point)
+            if expand is True:
+                lt = list(point)
+                lt[0] -= 0.5
+                lt[1] += 0.5
+                featpoints.append(lt)
+                lb = list(point)
+                lb[0] -= 0.5
+                lb[1] -= 0.5
+                featpoints.append(lb)
+                rt = list(point)
+                rt[0] += 0.5
+                rt[1] += 0.5
+                featpoints.append(rt)
+                rb = list(point)
+                rb[0] += 0.5
+                rb[1] -= 0.5
+                featpoints.append(rb)
+        return featpoints
+
+
+
+
 
     pass
 

@@ -5,12 +5,12 @@ import numpy as np
 
 def valid_angle(angle):
     '''
-    limit the angle in [0,360]
+    limit the angle in [0,2*pi]
     :param angle:
     :return:
     '''
-    if angle > 360:
-        angle = 360
+    if angle > 2 * np.pi:
+        angle = 2 * np.pi
     elif angle < 0:
         angle = 0
     return angle
@@ -37,7 +37,6 @@ class Transform:
 
     def image2ref(self,x,y,z,pose):
         px,py,pr = pose.state
-        pr = pr / 360 * 2 * math.pi
         rot_mat = self.get_rotate_mat(pr)
         pos = np.array([x-px,y-py,z])
         ref_pos = np.dot(rot_mat.T,pos)

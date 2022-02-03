@@ -6,5 +6,9 @@ My YEAR FOUR graduation project about SLAM with event camera
 
 - [ ] Using Particle filtering in localization
 
+## started
+```
+python main.py
 
+```
 ## News
