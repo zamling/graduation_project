@@ -10,6 +10,7 @@ import math
 import turtle
 import random
 import numpy as np
+import seaborn as sns
 
 import matplotlib.pyplot as plt
 
@@ -31,19 +32,24 @@ def draw_partiles(particles,max):
         x,y,r = pose.state
         xs.append(x)
         ys.append(y)
-    colors1 = '#00CED1'  # 点的颜色
+    colors1 = '#00CED1'
     colors2 = '#DC143C'
-    area = np.pi * 4 ** 2  # 点面积
+    area = np.pi * 4 ** 2
     # 画散点图
     plt.scatter(xs, ys, s=area, c=colors1, alpha=0.4, label='particles')
     plt.scatter(m_x, m_y, s=area, c=colors2, alpha=0.4, label='maximum')
 
     plt.show()
 
-
-
-
-
+def draw_angle(particles,max_r):
+    rs = []
+    for p in particles:
+        pose = p.get_pose()
+        x, y, r = pose.state
+        rs.append(r)
+    sns.displot(rs,bins=20)
+    plt.vlines(max_r, 0, 1, color="red")
+    plt.show()
 
 class Maze(object):
     def __init__(self):
@@ -109,5 +115,7 @@ class Maze(object):
         turtle.setheading(90 - robot.h)
         turtle.stamp()
         turtle.update()
+
+
 
 

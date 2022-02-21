@@ -6,10 +6,12 @@ data_map = {'single':'single_dot.txt',
             'tone':'tone_dots.txt',
             'triangle':'triangle_dots.txt',
             'shape':'shapes_dots.txt',
-            'random':'random_dots.txt'}
+            'random':'random_dots.txt',
+            'triangle2':'triangle_all.txt'}
 root = "C:\git\graduation_project\Data"
 feat_map = {
-    'triangle': [[-5.8,0,46],[9.4,0,46],[0,6.0,46]]
+    'triangle': [[-5.8,0,46],[9.4,0,46],[0,6.0,46]],
+    'triangle2': [[-5.8,0,46],[9.4,0,46],[0,6.0,46]]
 }
 
 def dataLoader(name):
@@ -28,6 +30,29 @@ def dataLoader(name):
         event = E.Event(x=event_list[1],y=event_list[2],p=event_list[3],t=event_list[0])
         results.append(event)
     return results
+
+class batch_data:
+    def __init__(self,B,event_list):
+        self.B = B
+        self.current_index = 0
+        self.event_list = event_list
+        self.length = len(event_list)//B
+    def __len__(self):
+        return self.length
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        output = []
+        for i in range(self.B):
+            output.append(self.event_list[self.current_index+i])
+        self.current_index += self.B
+        return output
+
+
+
+
 
 def getFeaturePoints(name,expand=True):
     featpoints = []

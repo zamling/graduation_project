@@ -10,9 +10,13 @@ def valid_angle(angle):
     :return:
     '''
     if angle > 2 * np.pi:
-        angle = 2 * np.pi
+        factor = angle // (2 * np.pi)
+        angle = angle - factor * 2 * np.pi
+
     elif angle < 0:
-        angle = 0
+        temp_angle = -angle
+        factor = temp_angle // (2 * np.pi)
+        angle = angle + (factor+1) * 2 * np.pi
     return angle
 
 

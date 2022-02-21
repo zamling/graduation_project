@@ -50,7 +50,9 @@ class ParticleFilter:
         self.f = arg.focal
         self.G0 = arg.G0
         self.Wpx = self.cal_Wpx()
+        self.theta = 1
         #format of feature points [(1,2),(2,3),...]
+        self.alpha = self.cal_alpha()
 
         self.init_particle()
 
@@ -75,6 +77,7 @@ class ParticleFilter:
 
 
     def update(self,event,pre_particles):
+        min_h_list = []
         event_param = event.get_param()
         e_x = event_param['x']
         e_y = event_param['y']
@@ -82,26 +85,85 @@ class ParticleFilter:
         for i,particle in enumerate(pre_particles):
             pose = particle.get_pose()
             p_x, p_y, p_r = pose.state
-            e_x, e_y, e_z = self.transform.image2ref(e_x, e_y, e_z, pose)
+            # update pose
             delta_r = self.Wpx / self.G0
             h,w = self.map_info
             S = min(h,w)
-            delta_theta = 4 / (S * self.G0)
+            #S = 100
+            if self.theta==1:
+                delta_theta = 4/(S*self.G0) # 0.0796 degree when G0=8
+            elif self.theta==2:
+                delta_theta = 0.2 * 2* np.pi/360 # 0.2 degree
+            # delta_theta = 0.2 * 2* np.pi/360 # 0.2 degree
+            else:
+                delta_theta = 0.5 * 2* np.pi/360 # 0.5 degree
+            # delta_theta = 0.5 * 2 * np.pi / 360  # 0.5 degree
+
+            #delta_theta = (2/360)*2*np.pi
             M_x = np.random.normal(loc=0, scale=delta_r)
             M_y = np.random.normal(loc=0, scale=delta_r)
             M_r = np.random.normal(loc=0, scale=delta_theta)
             x = p_x + M_x
             y = p_y + M_y
             r = p_r + M_r
+            r = tools.valid_angle(r)
             new_pose = E.Pose(x,y,r)
             self.particle_list[i].update_Pose(new_pose)
-            r = distance((e_x,e_y,e_z),(x,y,0))
-            min_h = self.find_min(r, (e_x, e_y, e_z))
+            # update score
+            #some new
+            new_p_x, new_p_y, new_p_r = new_pose.state
+            e_x, e_y, e_z = self.transform.image2ref(e_x, e_y, e_z, new_pose)
+            R = distance((e_x, e_y, e_z), (new_p_x, new_p_y, 0))
+            min_h = self.find_min(R, (e_x, e_y, e_z))
+            min_h_list.append(min_h)
             update_number = np.exp(-1 / 2 * np.square(min_h / (self.gamma * self.Wpx)))
-            alpha = self.cal_alpha()
             pre_score = particle.get_score()
-            score = pre_score + alpha * update_number
+            score = pre_score + self.alpha * update_number
             self.particle_list[i].update_Score(score)
+        minimum = min(min_h_list)
+        return minimum
+
+    def update_with_batch(self,events,pre_particles):
+        b = len(events)
+        for event in events:
+            for i,particle in enumerate(pre_particles):
+                pose = particle.get_pose()
+                p_x, p_y, p_r = pose.state
+                delta_r = self.Wpx / self.G0
+                h,w = self.map_info
+                S = min(h,w)
+                #S = 100
+                if self.theta == 1:
+                    delta_theta = 4 / (S * self.G0)  # 0.0796 degree when G0=8
+                elif self.theta == 2:
+                    delta_theta = 0.2 * 2 * np.pi / 360  # 0.2 degree
+                # delta_theta = 0.2 * 2* np.pi/360 # 0.2 degree
+                else:
+                    delta_theta = 0.5 * 2 * np.pi / 360  # 0.5 degree
+                M_x = np.random.normal(loc=0, scale=delta_r)
+                M_y = np.random.normal(loc=0, scale=delta_r)
+                M_r = np.random.normal(loc=0, scale=delta_theta)
+                x = p_x + np.sqrt(b) * M_x
+                y = p_y + np.sqrt(b) * M_y
+                r = p_r + np.sqrt(b) * M_r
+                r = tools.valid_angle(r)
+                new_pose = E.Pose(x,y,r)
+                self.particle_list[i].update_Pose(new_pose)
+                sum = 0
+                for i in range(len(events)):
+                    score_event_param = event.get_param()
+                    score_e_x = score_event_param['x']
+                    score_e_y = score_event_param['y']
+                    score_e_x_i, score_e_y_i, score_e_z_i = self.transform.pixel2image(score_e_x, score_e_y)
+                    score_e_x_r, score_e_y_r, score_e_z_r = self.transform.image2ref(score_e_x_i, score_e_y_i, score_e_z_i, new_pose)
+                    new_p_x, new_p_y, new_p_r = new_pose.state
+                    R = distance((score_e_x_r, score_e_y_r, score_e_z_r), (new_p_x, new_p_y, 0))
+                    min_h = self.find_min(R, (score_e_x_r, score_e_y_r, score_e_z_r))
+                    update_number = np.exp(-1 / 2 * np.square(min_h / (self.gamma * self.Wpx)))
+                    sum += update_number
+                pre_score = particle.get_score()
+                score = pre_score + self.alpha * sum / b
+                self.particle_list[i].update_Score(score)
 
 
 
@@ -117,6 +179,18 @@ class ParticleFilter:
             else:
                 if h < cur_min:
                     cur_min = h
+        return cur_min
+    def find_min_V2(self,r,e):
+        #F_H(r)
+        cur_min = None
+        for feature_ in self.feature_points:
+            x = distance(feature_,e)
+
+            if cur_min is None:
+                cur_min = x
+            else:
+                if x < cur_min:
+                    cur_min = x
         return cur_min
 
 
@@ -150,8 +224,6 @@ class ParticleFilter:
         new_particle_list = []
         current_poses = []
         current_scores = []
-        new_poses = []
-        new_scores = np.zeros((self.n_particles,))
         for i,particle in enumerate(self.particle_list):
             current_poses.append(particle.get_pose())
             current_scores.append(particle.get_score())

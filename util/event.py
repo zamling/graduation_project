@@ -64,9 +64,9 @@ class Pose:
         return self.x, self.y, self.r
 
     def add_noise(self,level=1):
-        x = self.x+ random.uniform(-level, level)
-        y = self.x+ random.uniform(-level, level) # guassion  1 cm 1-2 degree (0, 2pi)
-        r = self.x+ random.uniform(-level, level)*2*2*np.pi/360
+        x = self.x + np.random.normal(loc=0, scale=1)
+        y = self.y + np.random.normal(loc=0, scale=1) # guassion  1 cm 1-2 degree (0, 2pi)
+        r = self.r + np.random.normal(loc=0, scale=2*2*np.pi/360)
         r = tools.valid_angle(r)
 
         return Pose(x,y,r)
