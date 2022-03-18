@@ -2,16 +2,18 @@ import numpy as np
 import pandas as pd
 import os
 from util import event as E
+
 data_map = {'single':'single_dot.txt',
             'tone':'tone_dots.txt',
             'triangle':'triangle_dots.txt',
             'shape':'shapes_dots.txt',
             'random':'random_dots.txt',
             'triangle2':'triangle_all.txt'}
-root = "C:\git\graduation_project\Data"
+# root = "C:\git\graduation_project\Data"
+root = "/data1/zem/graduate_project/Data"
+
 feat_map = {
     'triangle': [[-5.8,0,46],[9.4,0,46],[0,6.0,46]],
-    'triangle2': [[-5.8,0,46],[9.4,0,46],[0,6.0,46]]
 }
 
 def dataLoader(name):
@@ -32,23 +34,46 @@ def dataLoader(name):
     return results
 
 class batch_data:
-    def __init__(self,B,event_list):
-        self.B = B
+    def __init__(self,event_list):
         self.current_index = 0
         self.event_list = event_list
-        self.length = len(event_list)//B
-    def __len__(self):
-        return self.length
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
+    def get_data(self,B):
         output = []
-        for i in range(self.B):
+        for i in range(B):
             output.append(self.event_list[self.current_index+i])
-        self.current_index += self.B
+        self.current_index += B
         return output
+
+class TimeDataIter:
+    def __init__(self,event_list,interval):
+        self.event_list = event_list
+        self.interval = interval
+        self.iter = batch_data(event_list)
+        self.time = 0
+        self.current = 0
+        self.terminal = len(event_list)
+    def iter_data(self):
+        event_time = self.event_list[self.current].get_param()['t']
+        count = 0
+        while event_time < self.time + self.interval:
+            count += 1
+            self.current += 1
+            if self.current == self.terminal:
+                break
+            event_time = self.event_list[self.current].get_param()['t']
+        self.time += self.interval
+        if count == 0:
+            return None
+        else:
+            data = self.iter.get_data(count)
+            return data
+    def not_end(self):
+        return self.current < self.terminal
+    def currentEvent(self):
+        return self.current
+
+
 
 
 

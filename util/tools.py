@@ -28,10 +28,12 @@ class Transform:
 
     def pixel2image(self,x,y):
         z_ = self.arg.D
-        h,w = self.arg.map_info
+        h,w = self.arg.map_info # h=360, w=480
 
-        x_ = ((self.arg.D / self.arg.focal) * x - w / 2) * self.alpha
-        y_ = ((self.arg.D / self.arg.focal) * y - h / 2) * self.alpha
+        # x_ = ((self.arg.D / self.arg.focal) * x - w / 2) * self.alpha
+        # y_ = ((self.arg.D / self.arg.focal) * y - h / 2) * self.alpha
+        x_ = ((self.arg.D / self.arg.focal) * (x - w / 2)) * self.alpha
+        y_ = ((self.arg.D / self.arg.focal) * (y - h / 2)) * self.alpha
 
         return x_ , y_, z_
 
@@ -42,8 +44,12 @@ class Transform:
     def image2ref(self,x,y,z,pose):
         px,py,pr = pose.state
         rot_mat = self.get_rotate_mat(pr)
-        pos = np.array([x-px,y-py,z])
-        ref_pos = np.dot(rot_mat.T,pos)
+        pos = np.array([x,y,z])
+        ref_pos = np.dot(rot_mat.T, pos)
+        ref_pos[0] -= px
+        ref_pos[1] -= py
+        # pos = np.array([x-px,y-py,z])
+
 
         return ref_pos[0],ref_pos[1],ref_pos[2]
 

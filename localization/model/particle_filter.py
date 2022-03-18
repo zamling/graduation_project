@@ -95,8 +95,10 @@ class ParticleFilter:
             elif self.theta==2:
                 delta_theta = 0.2 * 2* np.pi/360 # 0.2 degree
             # delta_theta = 0.2 * 2* np.pi/360 # 0.2 degree
+            elif self.theta == 3:
+                delta_theta = 0.5 * 2 * np.pi / 360  # 0.5 degree
             else:
-                delta_theta = 0.5 * 2* np.pi/360 # 0.5 degree
+                delta_theta = 1 * 2* np.pi/360 # 1 degree
             # delta_theta = 0.5 * 2 * np.pi / 360  # 0.5 degree
 
             #delta_theta = (2/360)*2*np.pi
@@ -124,33 +126,37 @@ class ParticleFilter:
         return minimum
 
     def update_with_batch(self,events,pre_particles):
-        b = len(events)
-        for event in events:
-            for i,particle in enumerate(pre_particles):
-                pose = particle.get_pose()
-                p_x, p_y, p_r = pose.state
-                delta_r = self.Wpx / self.G0
-                h,w = self.map_info
-                S = min(h,w)
-                #S = 100
-                if self.theta == 1:
-                    delta_theta = 4 / (S * self.G0)  # 0.0796 degree when G0=8
-                elif self.theta == 2:
-                    delta_theta = 0.2 * 2 * np.pi / 360  # 0.2 degree
-                # delta_theta = 0.2 * 2* np.pi/360 # 0.2 degree
-                else:
-                    delta_theta = 0.5 * 2 * np.pi / 360  # 0.5 degree
-                M_x = np.random.normal(loc=0, scale=delta_r)
-                M_y = np.random.normal(loc=0, scale=delta_r)
-                M_r = np.random.normal(loc=0, scale=delta_theta)
-                x = p_x + np.sqrt(b) * M_x
-                y = p_y + np.sqrt(b) * M_y
-                r = p_r + np.sqrt(b) * M_r
-                r = tools.valid_angle(r)
-                new_pose = E.Pose(x,y,r)
-                self.particle_list[i].update_Pose(new_pose)
+        if events == None:
+            b = 0
+        else:
+            b = len(events)
+        for i,particle in enumerate(pre_particles):
+            pose = particle.get_pose()
+            p_x, p_y, p_r = pose.state
+            delta_r = self.Wpx / self.G0
+            h,w = self.map_info
+            S = min(h,w)
+            #S = 100
+            if self.theta == 1:
+                delta_theta = 4 / (S * self.G0)  # 0.0796 degree when G0=8
+            elif self.theta == 2:
+                delta_theta = 0.2 * 2 * np.pi / 360  # 0.2 degree
+            # delta_theta = 0.2 * 2* np.pi/360 # 0.2 degree
+            else:
+                delta_theta = 0.5 * 2 * np.pi / 360  # 0.5 degree
+            M_x = np.random.normal(loc=0, scale=delta_r)
+            M_y = np.random.normal(loc=0, scale=delta_r)
+            M_r = np.random.normal(loc=0, scale=delta_theta)
+            x = p_x + M_x
+            y = p_y + M_y
+            r = p_r + M_r
+            r = tools.valid_angle(r)
+            new_pose = E.Pose(x,y,r)
+            self.particle_list[i].update_Pose(new_pose)
+
+            if b != 0:
                 sum = 0
-                for i in range(len(events)):
+                for event in events:
                     score_event_param = event.get_param()
                     score_e_x = score_event_param['x']
                     score_e_y = score_event_param['y']
