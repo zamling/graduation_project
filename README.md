@@ -27,7 +27,7 @@ git clone https://github.com/zamling/DB.git
 
 ## run custom data
 prepare the recorded data. I have given the codes about dealing with data in 
-ATIS format, you can run `demo_open_data`
+ATIS format, you can run `demo_open_data.m`
 
 If you want to get the particles map, you can run
 ```
