@@ -26,6 +26,9 @@ git clone https://github.com/zamling/DB.git
 ```
 
 ## run custom data
+prepare the recorded data. I have given the codes about dealing with data in 
+ATIS format, you can run `demo_open_data`
+
 If you want to get the particles map, you can run
 ```
 python main.py
@@ -44,6 +47,8 @@ python debug.py
 # optional modes
 python weight.py --expand --only_pos --debug_type "cost"/"transform"
 ```
+Note: you need to set your own path in codes
+
 ## acknowledgement
 Thanks are due to my supervisor, Altmann, Yoann and my teaching assistants 
 Hamilton, Craig and Abdulaziz, Abdullah
