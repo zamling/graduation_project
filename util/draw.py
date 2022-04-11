@@ -7,12 +7,14 @@
 # ------------------------------------------------------------------------
 
 import math
+import os
 import turtle
 import random
 import numpy as np
-import seaborn as sns
-
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # from pyecharts.charts import HeatMap
 
@@ -24,12 +26,13 @@ import matplotlib.pyplot as plt
 #
 # UPDATE_EVERY = 0
 # DRAW_EVERY = 0
-
+save_root = '/data1/zem/graduate_project/Data/exp_3'
+print('image save_root',save_root)
 def draw_HeatMap(data,name=None):
     xs = list(range(-25,26))
     ys = list(range(35,-16,-1))
 
-    sns.heatmap(data,cbar=False,xticklabels=False,yticklabels=False)
+    sns.heatmap(data,xticklabels=False,yticklabels=False)  # ,cbar=False
     #heatmap = fig.get_figure()
     #heatmap.savefig(name)
     plt.show()
@@ -41,6 +44,7 @@ def save_HeatMap(data,name=None):
     fig = sns.heatmap(data,cbar=False,xticklabels=False,yticklabels=False)
     heatmap = fig.get_figure()
     heatmap.savefig(name)
+    plt.close()
 
 
 def draw_partiles(particles,max):
@@ -60,6 +64,42 @@ def draw_partiles(particles,max):
     plt.scatter(m_x, m_y, s=area, c=colors2, alpha=0.4, label='maximum')
 
     plt.show()
+
+def save_partiles(particles,max,name):
+    xs = []
+    ys = []
+    m_x, m_y = max
+    for p in particles:
+        pose = p.get_pose()
+        x,y,r = pose.state
+        xs.append(x)
+        ys.append(y)
+    colors1 = '#00CED1'
+    colors2 = '#DC143C'
+    area = np.pi * 4 ** 2
+    # 画散点图
+    fig,ax = plt.subplots()
+    ax.scatter(xs, ys, s=area, c=colors1, alpha=0.4, label='particles')
+    ax.scatter(m_x, m_y, s=area, c=colors2, alpha=0.4, label='maximum')
+    save_path = os.path.join(save_root,name)
+
+    fig.savefig(save_path)
+    plt.close()
+    print(f'===>saving {name}')
+
+def save_angle(particles,max_r,name):
+    rs = []
+    for p in particles:
+        pose = p.get_pose()
+        x, y, r = pose.state
+        rs.append(r)
+    sns.displot(rs,bins=20)
+    plt.vlines(max_r, 0, 1, color="red")
+
+    save_path = os.path.join(save_root,name)
+    plt.savefig(save_path)
+    plt.close()
+    print(f'===>saving {name}')
 
 def draw_angle(particles,max_r):
     rs = []

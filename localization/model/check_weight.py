@@ -37,37 +37,56 @@ class WeightChecker:
 
 
     def fix_angle_update(self,events):
-        if events == None:
+        '''
+        update scores by events
+
+        :param events: events in current batch
+        :return:
+        '''
+        if len(events)==0:
             b = 0
             return None
         else:
             b = len(events)
         for i in range(self.weightMap.shape[0]):
             for j in range(self.weightMap.shape[1]):
+                #generate the current pose
                 y_shift = 0
                 p_x = j - 25
                 p_y = 25 - i + y_shift
-                p_r = np.pi/2
+                # p_r = np.pi/2
+                p_r = 90 * 2 * np.pi / 360 # 90 degree
                 new_pose = E.Pose(p_x,p_y,p_r)
                 sum = 0
+                # update scores
                 for event in events:
                     score_event_param = event.get_param()
                     score_e_x = score_event_param['x']
                     score_e_y = score_event_param['y']
+                    # transform coordinates
                     score_e_x_i, score_e_y_i, score_e_z_i = self.transform.pixel2image(score_e_x, score_e_y)
                     score_e_x_r, score_e_y_r, score_e_z_r = self.transform.image2ref(score_e_x_i, score_e_y_i, score_e_z_i, new_pose)
                     new_p_x, new_p_y, new_p_r = new_pose.state
+                    # calculate the length of ray
                     R = distance((score_e_x_r, score_e_y_r, score_e_z_r), (new_p_x, new_p_y, 0))
+                    # find minimum h
                     min_h = self.find_min(R, (score_e_x_r, score_e_y_r, score_e_z_r))
+                    # eq. 28 in my report
                     update_number = np.exp(-1 / 2 * np.square(min_h / (self.gamma * self.Wpx)))
                     sum += update_number
                 pre_score = self.weightMap[i][j]
+                # normalized by batch size b
                 score = pre_score + self.alpha * sum / b
                 self.weightMap[i][j] = score
 
     def check_costMatrix(self,events):
+        '''
+        check the scores map and minimum h
+        :param events: events in current batch
+        :return: minimum h, score maps
+        '''
         print(f'alpha: {self.alpha}')
-        if events == None:
+        if len(events) == 0:
             b = 0
             return 0,0,0
         else:
@@ -114,18 +133,6 @@ class WeightChecker:
             else:
                 if h < cur_min:
                     cur_min = h
-        return cur_min
-    def find_min_V2(self,r,e):
-        #F_H(r)
-        cur_min = None
-        for feature_ in self.feature_points:
-            x = distance(feature_,e)
-
-            if cur_min is None:
-                cur_min = x
-            else:
-                if x < cur_min:
-                    cur_min = x
         return cur_min
 
     def cal_Wpx(self):

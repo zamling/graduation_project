@@ -1,5 +1,5 @@
 import argparse
-from engine import main, main_batch, weight_fix_angle, get_pred_img
+from engine import weight_fix_angle, get_pred_img
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Set transformer detector', add_help=False)
@@ -16,18 +16,18 @@ def get_args_parser():
     parser.add_argument('--map_info', default=(360,480), type=tuple)
     parser.add_argument('--G0', default=8, type=int)
 
-    parser.add_argument('--interval', default=500, type=int)
+    parser.add_argument('--interval', default=100000, type=int)
     # 100,000  500
 
     parser.add_argument('--N_normalize_weight', default=1, type=int)
     parser.add_argument('--N_HeatMap', default=1, type=int)
 
-    parser.add_argument('--expand', action='store_true', help='expand the number of feature points')
+    parser.add_argument('--expand', action='store_true',help='expand the number of feature points')
     parser.add_argument('--only_pos', action='store_true', help='only use the positive events')
 
     return parser
 
-# TODO: check angle (no problem), only positive (no effect), expanding feature points, adjust angle random walk
+
 
 
 
@@ -35,16 +35,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('SLAM with event camera', parents=[get_args_parser()])
     args = parser.parse_args()
     print(args)
-    # main(args)
-    main_batch(args)
-
-
-
-    # feats = L.getFeaturePoints('triangle')
-    # print(feats)
-    # transform = tools.Transform(args)
-    # pose = E.Pose(0,0,0)
-    # x,y,z = transform.image2ref(3,4,5,pose)
-    # print("x = {}, y={}, z={}".format(x,y,z))
-
-
+    weight_fix_angle(args)
+    get_pred_img()

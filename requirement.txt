@@ -1,0 +1,6 @@
+numpy
+bisect
+scipy
+tqdm
+matplotlib
+seaborn

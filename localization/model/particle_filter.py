@@ -109,6 +109,7 @@ class ParticleFilter:
             y = p_y + M_y
             r = p_r + M_r
             r = tools.valid_angle(r)
+            # r = np.pi/2
             new_pose = E.Pose(x,y,r)
             self.particle_list[i].update_Pose(new_pose)
             # update score
@@ -126,14 +127,21 @@ class ParticleFilter:
         return minimum
 
     def update_with_batch(self,events,pre_particles):
-        if events == None:
+        '''
+        update pose and scores
+        :param events: a batch of events
+        :param pre_particles: particles in last iteration
+        :return:
+        '''
+        if len(events) == 0:
             b = 0
         else:
             b = len(events)
         for i,particle in enumerate(pre_particles):
+            # update pose
             pose = particle.get_pose()
             p_x, p_y, p_r = pose.state
-            delta_r = self.Wpx / self.G0
+            delta_r = self.Wpx / self.G0 # 0.11/8 cm
             h,w = self.map_info
             S = min(h,w)
             #S = 100
@@ -151,9 +159,11 @@ class ParticleFilter:
             y = p_y + M_y
             r = p_r + M_r
             r = tools.valid_angle(r)
+            # r = np.pi/2
             new_pose = E.Pose(x,y,r)
             self.particle_list[i].update_Pose(new_pose)
 
+            # only update scores when there are events
             if b != 0:
                 sum = 0
                 for event in events:

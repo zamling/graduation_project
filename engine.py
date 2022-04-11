@@ -7,7 +7,7 @@ from util import tools
 from util import event as E
 from util import load_data as L
 import numpy as np
-from util.draw import draw_partiles, draw_angle, draw_HeatMap, save_HeatMap
+from util.draw import draw_partiles, draw_angle, draw_HeatMap, save_HeatMap, save_partiles,save_angle
 import matplotlib.pyplot as plt
 import scipy.io as scio
 '''
@@ -15,7 +15,7 @@ mydata_v3: gamma 100
 mydata_gamma50 : gamma 50
 mydata_gamma50_tr: gamma 50, translation first, followed by rotation
 '''
-save_file = "/data1/zem/graduate_project/Data/mydata_gamma10_tr.mat"
+save_file = "/data1/zem/graduate_project/Data/mydata_Expand_5.mat"
 
 
 def get_pose(particles):
@@ -61,17 +61,17 @@ def main(args):
         filter.increment_time()
 
 def main_batch(args):
-    # loop
+    # load all of events
     events = L.dataLoader('triangle2')
     events_number = len(events)
-    event_loader = L.TimeDataIter(events,args.interval)
-    feature_points = L.getFeaturePoints('triangle',expand=False)
+    # generate the events iterator in a certain time interval args.interval
+    event_loader = L.TimeDataIter(events,args.interval,is_positive=args.only_pos)
+    feature_points = L.getFeaturePoints('triangle',expand=args.expand)
     filter = ParticleFilter(arg=args,feature_points=feature_points)
+    # get the initial particles
     pre_particle = filter.get_particles()
-    pose = get_pose(pre_particle)
-    draw_partiles(pre_particle, (pose[0], pose[1]))
-    draw_angle(pre_particle, pose[2])
-    while event_loader.not_end():
+    count = 1
+    for i in tqdm(range(20000)):
         event_batch = event_loader.iter_data()
         filter.update_with_batch(event_batch,pre_particle)
         pre_particle = filter.get_particles()
@@ -83,29 +83,40 @@ def main_batch(args):
             current = event_loader.currentEvent()
             print("\n[Time Step]: {}, current event: [{}/{}]".format(filter.get_time_step(),current,events_number))
             print("current pose: {}".format(pose))
-        if (filter.get_time_step() + 1) % 3000 == 0:
+        # save the particle results
+        if (filter.get_time_step() + 1) % 200 == 0:
             drawParicle = filter.get_particles()
             pose = get_pose(drawParicle)
-            draw_partiles(drawParicle, (pose[0], pose[1]))
-            draw_angle(drawParicle,pose[2])
+            name = f'{count:04}.jpg'
+            name_angle = f'A{count:04}.jpg'
+            save_partiles(drawParicle, (pose[0], pose[1]),name)
+            count += 1
+            # save_angle(drawParicle,pose[2],name_angle)
+        # if (filter.get_time_step() + 1) % 2000 == 0:
+        #     drawParicle = filter.get_particles()
+        #     pose = get_pose(drawParicle)
+        #     # name = f'{count:04}.jpg'
+        #     draw_partiles(drawParicle, (pose[0], pose[1]))
+        #     # count += 1
+        #     draw_angle(drawParicle,pose[2])
 
         filter.increment_time()
 
 def weight_fix_angle(args):
-    # loop
+    # load all of events
     events = L.dataLoader('triangle2')
-    events_number = len(events)
-    event_loader = L.TimeDataIter(events,args.interval)
-    feature_points = L.getFeaturePoints('triangle',expand=False)
+    # generate the events iterator in a certain time interval args.interval
+    event_loader = L.TimeDataIter(events,args.interval,is_positive=args.only_pos)
+    # get feature points
+    feature_points = L.getFeaturePoints('triangle',expand=args.expand)
     checker = WeightChecker(arg=args,feature_points=feature_points)
+    # grid the whole map 51 by 51 [-25,25] for each coordinate
     outputs = np.zeros((100,51,51),dtype=np.float64)
     for i in tqdm(range(100)):
         event_batch = event_loader.iter_data()
         checker.fix_angle_update(event_batch)
         if (checker.get_time_step() + 1) % args.N_normalize_weight == 0:
             checker.normalize_weight()
-        # if (checker.get_time_step() + 1) % args.N_HeatMap == 0:
-        #     draw_HeatMap(checker.CurrentWeight)
 
         outputs[i,:,:] = checker.CurrentWeight
 
@@ -113,16 +124,13 @@ def weight_fix_angle(args):
     print(f'done in {save_file}')
 
 
-
-        #checker.increment_time()
-
 def get_pred_img():
     data = scio.loadmat(save_file)
     mydata = data['mydata']
     for i in tqdm(range(mydata.shape[0])):
         weightmap = mydata[i,:,:]
         save_name = f'{i+1:04}.jpg'
-        save_root = "/data1/zem/graduate_project/Data/data_gamma10_tr"
+        save_root = "/data1/zem/graduate_project/Data/data_Expand_5"
         save_path = os.path.join(save_root,save_name)
         save_HeatMap(weightmap,save_path)
 

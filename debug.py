@@ -28,6 +28,8 @@ def get_args_parser():
     parser.add_argument('--N_normalize_weight', default=1, type=int)
     parser.add_argument('--N_HeatMap', default=1, type=int)
     parser.add_argument('--debug_type', default='transform', type=str)
+    parser.add_argument('--expand', action='store_true', help='expand the number of feature points')
+    parser.add_argument('--only_pos', action='store_true', help='only use the positive events')
     return parser
 
 def check_transform(args,pixel_pos,img_pos=None,pose=None):
@@ -43,7 +45,6 @@ def check_transform(args,pixel_pos,img_pos=None,pose=None):
     x,y,z = transform.image2ref(img_x,img_y,img_z,pose)
     print("Refer: x = {}, y={}, z={}".format(x,y,z))
 
-# TODO: cost function
 
 def cost_matrix(args):
     events = L.dataLoader('triangle2')

@@ -34,22 +34,29 @@ def dataLoader(name):
     return results
 
 class batch_data:
-    def __init__(self,event_list):
+    def __init__(self,event_list,is_positive=False):
         self.current_index = 0
         self.event_list = event_list
+        self.is_positive = is_positive
 
     def get_data(self,B):
         output = []
         for i in range(B):
-            output.append(self.event_list[self.current_index+i])
+            if self.is_positive:
+                temp_event = self.event_list[self.current_index+i]
+                pol = temp_event.get_param()['p']
+                if pol == 1:
+                    output.append(self.event_list[self.current_index + i])
+            else:
+                output.append(self.event_list[self.current_index+i])
         self.current_index += B
         return output
 
 class TimeDataIter:
-    def __init__(self,event_list,interval):
+    def __init__(self,event_list,interval,is_positive=False):
         self.event_list = event_list
         self.interval = interval
-        self.iter = batch_data(event_list)
+        self.iter = batch_data(event_list,is_positive)
         self.time = 0
         self.current = 0
         self.terminal = len(event_list)
@@ -64,7 +71,7 @@ class TimeDataIter:
             event_time = self.event_list[self.current].get_param()['t']
         self.time += self.interval
         if count == 0:
-            return None
+            return []
         else:
             data = self.iter.get_data(count)
             return data
@@ -86,34 +93,59 @@ def getFeaturePoints(name,expand=True):
         for point in points:
             featpoints.append(point)
             if expand is True:
+                # top = list(point)
+                # top[1] += 1
+                # top[0] += 1
+                # featpoints.append(top)
+                # bot = list(point)
+                # bot[0] -= 1
+                # bot[1] -= 1
+                # featpoints.append(bot)
+                # r = list(point)
+                # r[0] += 1
+                # r[1] -= 1
+                # featpoints.append(r)
+                # l = list(point)
+                # l[0] -= 1
+                # l[1] += 1
+                # featpoints.append(l)
+                top = list(point)
+                top[1] += 1
+                featpoints.append(top)
+                bot = list(point)
+                bot[1] -= 1
+                featpoints.append(bot)
+                r = list(point)
+                r[0] += 1
+                featpoints.append(r)
+                l = list(point)
+                l[0] -= 1
+                featpoints.append(l)
                 lt = list(point)
-                lt[0] -= 0.5
-                lt[1] += 0.5
+                lt[0] -= 0.707
+                lt[1] += 0.707
                 featpoints.append(lt)
-                lb = list(point)
-                lb[0] -= 0.5
-                lb[1] -= 0.5
-                featpoints.append(lb)
                 rt = list(point)
-                rt[0] += 0.5
-                rt[1] += 0.5
+                rt[0] += 0.707
+                rt[1] += 0.707
                 featpoints.append(rt)
+                lb = list(point)
+                lb[0] -= 0.707
+                lb[1] -= 0.707
+                featpoints.append(lb)
                 rb = list(point)
-                rb[0] += 0.5
-                rb[1] -= 0.5
+                rb[0] += 0.707
+                rb[1] -= 0.707
                 featpoints.append(rb)
+        print('the number of feature point is: {}'.format(len(featpoints)))
         return featpoints
 
 
 
 
-
-    pass
-
-
-
 if __name__ == "__main__":
-    event_list = dataLoader('shape')
+    feature = getFeaturePoints('triangle')
+    print(feature)
 
 
 
