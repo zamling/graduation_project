@@ -22,7 +22,7 @@ pip install -r requirement.txt
 
 clone the repo by
 ```python
-git clone https://github.com/zamling/DB.git
+git clone https://github.com/zamling/graduation_project
 ```
 
 ## run custom data
