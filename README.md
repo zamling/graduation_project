@@ -27,8 +27,8 @@ git clone https://github.com/zamling/graduation_project.git
 
 ## run custom data
 prepare the recorded data. I have given the codes about dealing with data in 
-ATIS format, you can run `demo_open_data.m`
-original ATIS data is at `/dataset/*.dat` and the converted data is at
+ATIS format, you can run `demo_open_data.m`\
+Original ATIS data is at `/dataset/*.dat` and the converted data is at
 `/dataset/*.txt`
 
 **Before** you run codes, please change the root of your data path,`/dataset/` in each executed .py file \
