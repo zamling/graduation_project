@@ -26,8 +26,7 @@ import seaborn as sns
 #
 # UPDATE_EVERY = 0
 # DRAW_EVERY = 0
-save_root = '/data1/zem/graduate_project/Data/exp_3'
-print('image save_root',save_root)
+
 def draw_HeatMap(data,name=None):
     xs = list(range(-25,26))
     ys = list(range(35,-16,-1))
@@ -65,7 +64,7 @@ def draw_partiles(particles,max):
 
     plt.show()
 
-def save_partiles(particles,max,name):
+def save_partiles(args, particles,max,name):
     xs = []
     ys = []
     m_x, m_y = max
@@ -81,13 +80,14 @@ def save_partiles(particles,max,name):
     fig,ax = plt.subplots()
     ax.scatter(xs, ys, s=area, c=colors1, alpha=0.4, label='particles')
     ax.scatter(m_x, m_y, s=area, c=colors2, alpha=0.4, label='maximum')
+    save_root = args.save_root
     save_path = os.path.join(save_root,name)
 
     fig.savefig(save_path)
     plt.close()
     print(f'===>saving {name}')
 
-def save_angle(particles,max_r,name):
+def save_angle(args, particles,max_r,name):
     rs = []
     for p in particles:
         pose = p.get_pose()
@@ -95,6 +95,8 @@ def save_angle(particles,max_r,name):
         rs.append(r)
     sns.displot(rs,bins=20)
     plt.vlines(max_r, 0, 1, color="red")
+
+    save_root = args.save_root
 
     save_path = os.path.join(save_root,name)
     plt.savefig(save_path)

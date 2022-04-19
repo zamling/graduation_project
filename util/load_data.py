@@ -10,17 +10,19 @@ data_map = {'single':'single_dot.txt',
             'random':'random_dots.txt',
             'triangle2':'triangle_all.txt'}
 # root = "C:\git\graduation_project\Data"
-root = "/data1/zem/graduate_project/Data"
+
+# root = "/data1/zem/graduate_project/Data"
 
 feat_map = {
     'triangle': [[-5.8,0,46],[9.4,0,46],[0,6.0,46]],
 }
 
-def dataLoader(name):
+def dataLoader(args, name):
     if name in data_map:
         filename = data_map[name]
     else:
         raise ValueError("wrong data type name {}".format(name))
+    root = args.data_root
 
     path = os.path.join(root,filename)
     results = []

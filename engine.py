@@ -33,7 +33,7 @@ def get_pose(particles):
 
 def main(args):
     # loop
-    events = L.dataLoader('triangle2')
+    events = L.dataLoader(args,'triangle2')
     feature_points = L.getFeaturePoints('triangle',expand=False)
     filter = ParticleFilter(arg=args,feature_points=feature_points)
     pre_particle = filter.get_particles()
@@ -62,7 +62,7 @@ def main(args):
 
 def main_batch(args):
     # load all of events
-    events = L.dataLoader('triangle2')
+    events = L.dataLoader(args,'triangle2')
     events_number = len(events)
     # generate the events iterator in a certain time interval args.interval
     event_loader = L.TimeDataIter(events,args.interval,is_positive=args.only_pos)
@@ -89,9 +89,9 @@ def main_batch(args):
             pose = get_pose(drawParicle)
             name = f'{count:04}.jpg'
             name_angle = f'A{count:04}.jpg'
-            save_partiles(drawParicle, (pose[0], pose[1]),name)
+            save_partiles(args, drawParicle, (pose[0], pose[1]),name)
             count += 1
-            # save_angle(drawParicle,pose[2],name_angle)
+            # save_angle(args, drawParicle,pose[2],name_angle)
         # if (filter.get_time_step() + 1) % 2000 == 0:
         #     drawParicle = filter.get_particles()
         #     pose = get_pose(drawParicle)
@@ -104,7 +104,7 @@ def main_batch(args):
 
 def weight_fix_angle(args):
     # load all of events
-    events = L.dataLoader('triangle2')
+    events = L.dataLoader(args, 'triangle2')
     # generate the events iterator in a certain time interval args.interval
     event_loader = L.TimeDataIter(events,args.interval,is_positive=args.only_pos)
     # get feature points
@@ -124,16 +124,16 @@ def weight_fix_angle(args):
     print(f'done in {save_file}')
 
 
-def get_pred_img():
+def get_pred_img(args):
     data = scio.loadmat(save_file)
     mydata = data['mydata']
     for i in tqdm(range(mydata.shape[0])):
         weightmap = mydata[i,:,:]
         save_name = f'{i+1:04}.jpg'
-        save_root = "/data1/zem/graduate_project/Data/data_Expand_5"
+        save_root = args.save_root
         save_path = os.path.join(save_root,save_name)
         save_HeatMap(weightmap,save_path)
 
 
-if __name__ == "__main__":
-    get_pred_img()
+# if __name__ == "__main__":
+    # get_pred_img(ar)

@@ -22,8 +22,12 @@ def get_args_parser():
     parser.add_argument('--N_normalize_weight', default=1, type=int)
     parser.add_argument('--N_HeatMap', default=1, type=int)
 
+    parser.add_argument('--data_root', default="/data1/zem/graduate_project/Data", type=str)
+    parser.add_argument('--save_root', default="/data1/zem/graduate_project/Data/exp_3", type=str)
+
     parser.add_argument('--expand', action='store_true', help='expand the number of feature points')
     parser.add_argument('--only_pos', action='store_true', help='only use the positive events')
+
 
     return parser
 
@@ -32,10 +36,13 @@ def get_args_parser():
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser('SLAM with event camera', parents=[get_args_parser()])
     args = parser.parse_args()
     print(args)
     # main(args)
+    print('events data root is: ', args.data_root)
+    print('image saved root is: ', args.save_root)
     main_batch(args)
 
 

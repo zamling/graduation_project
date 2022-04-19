@@ -22,6 +22,9 @@ def get_args_parser():
     parser.add_argument('--N_normalize_weight', default=1, type=int)
     parser.add_argument('--N_HeatMap', default=1, type=int)
 
+    parser.add_argument('--data_root', default="/data1/zem/graduate_project/Data", type=str)
+    parser.add_argument('--save_root', default="/data1/zem/graduate_project/Data/exp_3", type=str)
+
     parser.add_argument('--expand', action='store_true',help='expand the number of feature points')
     parser.add_argument('--only_pos', action='store_true', help='only use the positive events')
 
@@ -36,4 +39,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(args)
     weight_fix_angle(args)
-    get_pred_img()
+    get_pred_img(args)
